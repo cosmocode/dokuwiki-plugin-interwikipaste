@@ -1,0 +1,7 @@
+base   interwikipaste
+author Anna Dabrowska
+email  dokuwiki@cosmocode.de
+date   2020-04-28
+name   interwikipaste plugin
+desc   Transforms pasted urls into matching interwiki links
+url    https://www.dokuwiki.org/plugin:interwikipaste
