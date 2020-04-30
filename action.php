@@ -12,36 +12,13 @@ class action_plugin_interwikipaste extends DokuWiki_Action_Plugin
      */
     public function register(Doku_Event_Handler $controller)
     {
-        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'handleAjaxCall');
+        $controller->register_hook('DOKUWIKI_STARTED', 'AFTER', $this, 'addInterwikisToJSINFO');
     }
 
-    /**
-     * Analyzes the pasted text and inserts an interwiki link instead,
-     * if one can be constructed. The selected text is used as link title in that case.
-     * Otherwise the clipboard content is simply pasted into the editor and replaces
-     * the selected text.
-     *
-     * @param Doku_Event $event
-     */
-    public function handleAjaxCall(Doku_Event $event)
+    public function addInterwikisToJSINFO(Doku_Event $event)
     {
-        if($event->data !== 'plugin_interwikipaste') return;
-
-        $event->preventDefault();
-        $event->stopPropagation();
-
-        global $INPUT;
-        $pasted = trim($INPUT->str('pasted'));
-        $title = $INPUT->str('selected');
-
-        // FIXME better check if $pasted is a URL
-        $matches = [];
-        if ($pasted && preg_match('/^http[^ ]+$/', $pasted, $matches)) {
-            // try to build the interwiki link
-            echo $this->getIwl($pasted, $title);
-        } else {
-            echo $pasted;
-        }
+        global $JSINFO;
+        $JSINFO['plugins']['interwikipaste']['patterns'] = json_encode($this->getInterwikiPatterns());
     }
 
     /**
@@ -65,67 +42,29 @@ class action_plugin_interwikipaste extends DokuWiki_Action_Plugin
         foreach ($wikis as $shortcut => $url) {
             // escaping now makes it easier to manipulate regex patterns later
             $pattern = preg_quote_cb($url);
+            $encode = (preg_match('/{URL|QUERY\\\}/', $url) === 1);
 
             // replace already escaped placeholders with named groups
+            $cnt = 0;
             $pattern = preg_replace(
                 '/\\\{(URL|NAME|SCHEME|HOST|PORT|PATH|QUERY)\\\}/',
-                '(?<$1>[^ ]+)',
+                '([^ ]+)',
                 $pattern,
                 -1,
                 $cnt
             );
 
-            // prepare to capture remainder if no placeholder is used
             if (!$cnt) {
-                $pattern .= '(?<REMAINDER>[^ ]*)';
+                $pattern .= '([^ ]+)';
             }
 
-            $patterns[$shortcut] = '/' . $pattern . '/';
+            $patterns[] = [
+                'shortcut' => $shortcut,
+                'pattern' => $pattern,
+                'encode' => $encode,
+            ];
         }
 
         return $patterns;
-    }
-
-    /**
-     * Returns the interwiki link if applicable, otherwise simply the pasted text
-     *
-     * @param string $url Pasted url
-     * @param string $title Current text selection to be used as link title
-     * @return string
-     */
-    protected function getIwl($url, $title)
-    {
-        if (!empty($title)) {
-            $title = '|' . $title;
-        }
-        $iwlTemplate = "[[%s>%s$title]]";
-        $patterns = $this->getInterwikiPatterns();
-
-        foreach ($patterns as $shortcut => $pattern) {
-            $matches = [];
-            if (preg_match($pattern, $url, $matches)) {
-                if (!empty($matches['NAME'])) {
-                    return sprintf($iwlTemplate, $shortcut, $matches['NAME']);
-                }
-                if (!empty($matches['PATH'])) {
-                    return sprintf($iwlTemplate, $shortcut, $matches['PATH']);
-                }
-                if (!empty($matches['REMAINDER'])) {
-                    return sprintf($iwlTemplate, $shortcut, $matches['REMAINDER']);
-                }
-                if (!empty($matches['URL'])) {
-                    return sprintf($iwlTemplate, $shortcut, urldecode($matches['URL']));
-                }
-                if (!empty($matches['QUERY'])) {
-                    return sprintf($iwlTemplate, $shortcut, urldecode($matches['QUERY']));
-                }
-                // blanket cover of other placeholders
-                if (!empty($matches[1])) {
-                    return sprintf($iwlTemplate, $shortcut, $matches[1]);
-                }
-            }
-        }
-        // no pattern match found
-        return $url;
     }
 }
