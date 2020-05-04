@@ -14,11 +14,11 @@ jQuery(function () {
         /**
          * Checks all interwiki patterns to reverse engineer
          * an interwiki link from pasted and selected text.
-         * Returns the original text if nothing matches.
+         * Returns false if nothing matches.
          *
          * @param url
          * @param title
-         * @returns {string}
+         * @returns {string|boolean}
          */
         function getIwl(url, title) {
             const patterns = JSON.parse(JSINFO.plugins.interwikipaste.patterns);
@@ -26,21 +26,19 @@ jQuery(function () {
                 title = '|' + title;
             }
             for (let i = 0; i < patterns.length; i++) {
-                let p = patterns[i];
-                let r = new RegExp(p.pattern, 'g');
-                let f = r.exec(url);
-                if (f !== null) {
-                    let captured = f[1];
-                    if (p.encode) {
+                let patternConf = patterns[i];
+                let regex = new RegExp(patternConf.pattern, 'g');
+                let matched = regex.exec(url);
+                if (matched !== null) {
+                    let captured = matched[1];
+                    if (patternConf.encode) {
                         captured = htmlDecode(captured);
                     }
-                    return `[[${p.shortcut}>${captured}${title}]]`;
+                    return `[[${patternConf.shortcut}>${captured}${title}]]`;
                 }
             }
-            return `[[${url}${title}]]`;
+            return false;
         }
-
-        event.preventDefault();
 
         const $editor = jQuery(this);
         const currentSelection = DWgetSelection($editor[0]);
@@ -48,13 +46,14 @@ jQuery(function () {
         const pasted = event.originalEvent.clipboardData.getData('text');
         let result;
 
-        // if not a URL, just paste it
+        // if not a URL, let the browser handle it
         if (pasted.search(/^http[^ ]+$/) === -1) {
-            result = pasted;
-        } else {
-            result = getIwl(pasted, selected);
+            return;
         }
-
-        pasteText(currentSelection, result, {});
+        result = getIwl(pasted, selected);
+        if (result) {
+            event.preventDefault();
+            pasteText(currentSelection, result, {});
+        }
     });
 });
