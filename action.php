@@ -55,7 +55,7 @@ class action_plugin_interwikipaste extends DokuWiki_Action_Plugin
             );
 
             if (!$cnt) {
-                $pattern .= '([^ ]+)';
+                $pattern .= '([^ ]+)?';
             }
 
             $patterns[] = [

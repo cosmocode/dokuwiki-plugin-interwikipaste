@@ -30,7 +30,7 @@ jQuery(function () {
                 let regex = new RegExp(patternConf.pattern, 'g');
                 let matched = regex.exec(url);
                 if (matched !== null) {
-                    let captured = matched[1];
+                    let captured = matched[1] ? matched[1] : '';
                     if (patternConf.encode) {
                         captured = htmlDecode(captured);
                     }
