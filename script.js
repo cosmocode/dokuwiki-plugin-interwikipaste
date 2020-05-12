@@ -13,18 +13,14 @@ jQuery(function () {
 
         /**
          * Checks all interwiki patterns to reverse engineer
-         * an interwiki link from pasted and selected text.
+         * an interwiki shortcut from pasted text.
          * Returns false if nothing matches.
          *
          * @param url
-         * @param title
          * @returns {string|boolean}
          */
-        function getIwl(url, title) {
+        function getIwl(url) {
             const patterns = JSON.parse(JSINFO.plugins.interwikipaste.patterns);
-            if (title) {
-                title = '|' + title;
-            }
             for (let i = 0; i < patterns.length; i++) {
                 let patternConf = patterns[i];
                 let regex = new RegExp(patternConf.pattern, 'g');
@@ -34,7 +30,7 @@ jQuery(function () {
                     if (patternConf.encode) {
                         captured = htmlDecode(captured);
                     }
-                    return `[[${patternConf.shortcut}>${captured}${title}]]`;
+                    return `${patternConf.shortcut}>${captured}`;
                 }
             }
             return false;
@@ -50,9 +46,33 @@ jQuery(function () {
         if (pasted.search(/^http[^ ]+$/) === -1) {
             return;
         }
-        result = getIwl(pasted, selected);
+        result = getIwl(pasted);
+
         if (result) {
             event.preventDefault();
+            // if some text is selected we assume it is the link title
+            if (selected) {
+                result = `[[${result}|${selected}]]`;
+            } else {
+                // check current position for surrounding link syntax
+                const allInput = $editor.val();
+                const caretPos = currentSelection.start;
+
+                // check for opening brackets before
+                const regBefore = new RegExp('\\[\\[ *');
+                const linkOpened = regBefore.exec(allInput.substring(caretPos, caretPos - 5));
+
+                // check for closing brackets (before opening ones)
+                const textAfter = allInput.substring(caretPos);
+                const linkClosed = textAfter.indexOf(']]') > textAfter.indexOf('[[');
+
+                if (!linkOpened) {
+                    result = '[[' + result;
+                }
+                if (!linkClosed) {
+                    result = result + ']]';
+                }
+            }
             pasteText(currentSelection, result, {});
         }
     });
