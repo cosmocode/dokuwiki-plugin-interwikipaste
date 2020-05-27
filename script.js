@@ -111,7 +111,7 @@ jQuery(function () {
                 // page with .htaccess URL rewriting
                 const idMatch = /(?:\/)([^&\?]+)/;
                 const matches = path.match(idMatch);
-                if (matches[1]) {
+                if (matches && matches[1]) {
                     return normalizeId(matches[1]);
                 }
             }
@@ -143,7 +143,7 @@ jQuery(function () {
         if (result) {
             event.preventDefault();
             const openSyntax = isMediaLink ? '{{' : '[[';
-            const closeSyntax = isMediaLink ? '}}' : ']]';
+            const closeSyntax = isMediaLink ? '?linkonly|}}' : ']]';
 
             // if some text is selected we assume it is the link title
             if (selected) {
@@ -171,7 +171,7 @@ jQuery(function () {
                     result = result + closeSyntax;
                 }
             }
-            pasteText(currentSelection, result, {});
+            pasteText(currentSelection, result, {nosel: true});
         }
     });
 });
