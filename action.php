@@ -48,7 +48,7 @@ class action_plugin_interwikipaste extends DokuWiki_Action_Plugin
             $cnt = 0;
             $pattern = preg_replace(
                 '/\\\{(URL|NAME|SCHEME|HOST|PORT|PATH|QUERY)\\\}/',
-                '([^ ]+)',
+                '([^ ]+)?',
                 $pattern,
                 -1,
                 $cnt
