@@ -58,7 +58,7 @@ jQuery(function () {
          */
         function getLocal(pasted) {
             const url = new URL(pasted);
-            const path = url.pathname;
+            const path = url.pathname.concat(url.hash);
             const href = url.href;
 
             // no URL rewriting
